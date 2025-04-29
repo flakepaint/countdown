@@ -1,0 +1,311 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wilmot Union High School Countdown</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background-color: #8b0000; /* Maroon color for Wilmot */
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+            margin-bottom: 20px;
+        }
+        h1 {
+            margin: 0;
+            font-size: 2.2em;
+        }
+        .countdown-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        .countdown-box {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            width: calc(50% - 15px);
+            box-sizing: border-box;
+        }
+        @media (max-width: 768px) {
+            .countdown-box {
+                width: 100%;
+            }
+        }
+        .countdown-box h2 {
+            margin-top: 0;
+            color: #8b0000;
+            font-size: 1.5em;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        .timer {
+            font-size: 2em;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .current-day-info {
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 10px;
+            border-left: 4px solid #8b0000;
+        }
+        footer {
+            text-align: center;
+            padding: 20px 0;
+            margin-top: 30px;
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Wilmot Union High School</h1>
+            <p>2024-2025 School Year Countdown</p>
+        </header>
+
+        <div class="countdown-container">
+            <div class="countdown-box">
+                <h2>School Days Remaining</h2>
+                <div id="school-days-countdown" class="timer">--</div>
+                <p>Until summer break begins!</p>
+            </div>
+            
+            <div class="countdown-box">
+                <h2>Calendar Days Remaining</h2>
+                <div id="calendar-days-countdown" class="timer">--</div>
+                <p>Until the last day of school (June 5, 2025)</p>
+            </div>
+            
+            <div class="countdown-box">
+                <h2>Current School Day Countdown</h2>
+                <div id="school-day-timer" class="timer">--:--:--:---</div>
+                <p>Until the end of today's school day (2:45 PM)</p>
+            </div>
+            
+            <div class="countdown-box">
+                <h2>School Year Progress</h2>
+                <div id="progress-bar" style="height: 30px; background-color: #e0e0e0; border-radius: 15px; overflow: hidden;">
+                    <div id="progress" style="height: 100%; width: 0%; background-color: #8b0000; transition: width 1s;"></div>
+                </div>
+                <div id="progress-text" style="text-align: center; margin-top: 10px; font-weight: bold;">0%</div>
+            </div>
+        </div>
+
+        <div class="current-day-info" id="today-info">
+            <h3>Today's Information</h3>
+            <p id="is-school-day">Checking if today is a school day...</p>
+            <p id="day-of-week">Current day: --</p>
+            <p id="current-date">Current date: --</p>
+        </div>
+
+        <footer>
+            <p>Based on Wilmot Union High School District Calendar 2024-2025</p>
+            <p>School Hours: 7:35 AM - 2:45 PM</p>
+        </footer>
+    </div>
+
+    <script>
+        // School year dates
+        const schoolStartDate = new Date(2024, 8, 4); // September 4, 2024
+        const schoolEndDate = new Date(2025, 5, 5);   // June 5, 2025
+        
+        // School hours
+        const schoolStartTime = "7:35";
+        const schoolEndTime = "14:45"; // 2:45 PM in 24-hour format
+        
+        // No school days (holidays, breaks, PD days)
+        const noSchoolDays = [
+            // Labor Day
+            "2024-09-02",
+            
+            // Professional Staff PD/Parent-Teacher Conference days
+            "2024-09-30", "2024-10-24", "2025-01-17", "2025-01-20", 
+            "2025-02-17", "2025-03-18", "2025-04-21", "2025-06-06",
+            
+            // Fall Break
+            "2024-10-25", "2024-10-28",
+            
+            // Thanksgiving Break
+            "2024-11-27", "2024-11-28", "2024-11-29",
+            
+            // Winter Break (Dec 23-Jan 1)
+            "2024-12-23", "2024-12-24", "2024-12-25", "2024-12-26", "2024-12-27",
+            "2024-12-30", "2024-12-31", "2025-01-01",
+            
+            // Spring Break (Mar 24-28)
+            "2025-03-24", "2025-03-25", "2025-03-26", "2025-03-27", "2025-03-28",
+            
+            // Easter Break
+            "2025-04-18", "2025-04-21",
+            
+            // Memorial Day
+            "2025-05-26"
+        ];
+        
+        // Total number of school days in the year (approximately 180)
+        const totalSchoolDays = 180;
+        
+        // Function to check if a date is a school day
+        function isSchoolDay(date) {
+            // Format the date as YYYY-MM-DD for comparison
+            const formattedDate = date.toISOString().split('T')[0];
+            
+            // Weekend check (0 = Sunday, 6 = Saturday)
+            if (date.getDay() === 0 || date.getDay() === 6) {
+                return false;
+            }
+            
+            // Holiday/no-school day check
+            if (noSchoolDays.includes(formattedDate)) {
+                return false;
+            }
+            
+            // Check if date is within school year
+            if (date < schoolStartDate || date > schoolEndDate) {
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // Function to calculate remaining school days
+        function calculateRemainingSchoolDays() {
+            let count = 0;
+            let currentDate = new Date();
+            currentDate.setHours(0, 0, 0, 0);
+            
+            while (currentDate <= schoolEndDate) {
+                if (isSchoolDay(currentDate)) {
+                    count++;
+                }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            
+            return count;
+        }
+        
+        // Function to update all countdowns
+        function updateCountdowns() {
+            const now = new Date();
+            
+            // Update today's information
+            document.getElementById('day-of-week').textContent = 'Current day: ' + now.toLocaleDateString('en-US', { weekday: 'long' });
+            document.getElementById('current-date').textContent = 'Current date: ' + now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            
+            // Check if today is a school day
+            const todayIsSchoolDay = isSchoolDay(now);
+            document.getElementById('is-school-day').textContent = todayIsSchoolDay ? 'Today is a school day!' : 'Today is NOT a school day.';
+            
+            // Update calendar days countdown
+            const msPerDay = 1000 * 60 * 60 * 24;
+            const daysUntilEndOfYear = Math.max(0, Math.ceil((schoolEndDate - now) / msPerDay));
+            document.getElementById('calendar-days-countdown').textContent = daysUntilEndOfYear;
+            
+            // Update school days countdown
+            const remainingSchoolDays = calculateRemainingSchoolDays();
+            document.getElementById('school-days-countdown').textContent = remainingSchoolDays;
+            
+            // Update school day timer
+            updateSchoolDayTimer();
+            
+            // Update progress bar
+            updateProgressBar();
+        }
+        
+        // Function to update the school day timer
+        function updateSchoolDayTimer() {
+            const now = new Date();
+            const todayIsSchoolDay = isSchoolDay(now);
+            
+            if (!todayIsSchoolDay) {
+                document.getElementById('school-day-timer').textContent = "Not a school day";
+                return;
+            }
+            
+            const currentHour = now.getHours();
+            const currentMinute = now.getMinutes();
+            
+            // Check if current time is before school starts or after school ends
+            const schoolStart = schoolStartTime.split(':').map(Number);
+            const schoolEnd = schoolEndTime.split(':').map(Number);
+            
+            if (currentHour < schoolStart[0] || (currentHour === schoolStart[0] && currentMinute < schoolStart[1])) {
+                // Before school starts
+                document.getElementById('school-day-timer').textContent = "School hasn't started yet";
+                return;
+            }
+            
+            if (currentHour > schoolEnd[0] || (currentHour === schoolEnd[0] && currentMinute > schoolEnd[1])) {
+                // After school ends
+                document.getElementById('school-day-timer').textContent = "School day is over";
+                return;
+            }
+            
+            // During school hours - calculate time remaining
+            const schoolEndToday = new Date(now);
+            schoolEndToday.setHours(schoolEnd[0], schoolEnd[1], 0, 0);
+            
+            const timeRemaining = schoolEndToday - now;
+            
+            const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
+            const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+            const milliseconds = Math.floor(timeRemaining % 1000);
+            
+            document.getElementById('school-day-timer').textContent = 
+                hours.toString().padStart(2, '0') + ":" + 
+                minutes.toString().padStart(2, '0') + ":" + 
+                seconds.toString().padStart(2, '0') + ":" + 
+                milliseconds.toString().padStart(3, '0');
+        }
+        
+        // Function to update progress bar
+        function updateProgressBar() {
+            const now = new Date();
+            const totalDays = Math.ceil((schoolEndDate - schoolStartDate) / (1000 * 60 * 60 * 24));
+            const daysPassed = Math.ceil((now - schoolStartDate) / (1000 * 60 * 60 * 24));
+            
+            let progressPercentage = 0;
+            
+            if (now < schoolStartDate) {
+                progressPercentage = 0;
+            } else if (now > schoolEndDate) {
+                progressPercentage = 100;
+            } else {
+                progressPercentage = Math.min(100, Math.max(0, (daysPassed / totalDays) * 100));
+            }
+            
+            document.getElementById('progress').style.width = progressPercentage.toFixed(1) + '%';
+            document.getElementById('progress-text').textContent = progressPercentage.toFixed(1) + '% of the school year completed';
+        }
+        
+        // Initialize and update every 10 milliseconds for precise countdown
+        updateCountdowns();
+        setInterval(updateCountdowns, 10);
+    </script>
+</body>
+</html>
